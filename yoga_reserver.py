@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import calendar
 import time
 import os
-from MindbodyHandler import MindbodyHandler
+from utils.mindbody_handler import MindbodyHandler
 
 
 def get_studio_choice():
