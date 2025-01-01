@@ -13,9 +13,11 @@ from MindbodyHandler import MindbodyHandler
 def get_studio_choice():
     while True:
         try:
-            print("Available studios:")
-            print("1. Metuchen")
-            print("2. Cranford")
+            print("-------------------------------------------------------")
+            print("Select studio:")
+            print(f"  Available studios:")
+            print(f"    1. Metuchen")
+            print(f"    2. Cranford")
             
             choice = int(input("\nEnter 1 for Metuchen or 2 for Cranford: "))
             
@@ -35,29 +37,34 @@ def get_target_month():
             current_date = datetime.now()
             current_month = current_date.month
             current_year = current_date.year
+
+            print("-------------------------------------------------------")
+            print("Select month:")
+            print(f"    Enter for current month")
+            print(f"    0. All remaining months")
+            for i, month in enumerate(calendar.month_name[1:], 1):
+                print(f"    {i}. {month}")
             
-            # Calculate next month and year
-            next_month = current_month + 1 if current_month < 12 else 1
-            next_year = current_year if current_month < 12 else current_year + 1
+            choice = input("\nEnter month number (0-12 or Enter for current): ").strip()
             
-            print("Available months:")
-            print(f"1. Current month ({calendar.month_name[current_month]} {current_year})")
-            print(f"2. Next month ({calendar.month_name[next_month]} {next_year})")
+            if not choice:  # Empty input (Enter pressed)
+                return current_year, current_month, False
             
-            choice = int(input("\nEnter 1 for current month or 2 for next month: "))
-            
-            if choice == 1:
-                return current_year, current_month
-            elif choice == 2:
-                return next_year, next_month
+            choice = int(choice)
+            if choice == 0:
+                return current_year, current_month, True
+            elif 1 <= choice <= 12:
+                if choice < current_month:
+                    print("Cannot book classes in past months.")
+                    continue
+                return current_year, choice, False
             else:
-                print("Invalid choice. Please enter 1 or 2.")
+                print("Invalid choice. Please enter a number between 0 and 12 or press Enter.")
         except ValueError:
-            print("Invalid input. Please enter a number.")
+            print("Invalid input. Please enter a number or press Enter.")
 
 def get_target_day():
     days = {
-        0: "Any day",
         1: "Monday",
         2: "Tuesday",
         3: "Wednesday",
@@ -69,22 +76,29 @@ def get_target_day():
     
     while True:
         try:
-            print("Available days:")
+            print("-------------------------------------------------------")
+            print("Select day:")
+            print("Enter for any day")
             for num, day in days.items():
-                print(f"{num}. {day}")
+                print(f"    {num}. {day}")
             
-            choice = int(input("\nEnter the number for the day of the week (0-7): "))
+            choice = input("\nEnter day number (1-7 or Enter for any day): ").strip()
             
-            if 0 <= choice <= 7:
-                return None if choice == 0 else days[choice]
+            if not choice:  # Empty input (Enter pressed)
+                return None
+            
+            choice = int(choice)
+            if 1 <= choice <= 7:
+                return days[choice]
             else:
-                print("Invalid choice. Please enter a number between 0 and 7.")
+                print("Invalid choice. Please enter a number between 1 and 7 or press Enter.")
         except ValueError:
-            print("Invalid input. Please enter a number.")
+            print("Invalid input. Please enter a number or press Enter.")
 
 def get_target_time():
     while True:
         try:
+            print("-------------------------------------------------------")
             print("Enter target time (or press Enter to book any time)")
             time_str = input("Time (HH:MM AM/PM), e.g. '9:30 AM': ").strip()
             
@@ -105,7 +119,8 @@ def get_target_time():
 def get_instructor():
     while True:
         try:
-            print("\nEnter instructor name (or press Enter for any instructor)")
+            print("-------------------------------------------------------")
+            print("Enter instructor name (or press Enter for any instructor)")
             instructor = input("Instructor name: ").strip()
             return instructor if instructor else None
         except KeyboardInterrupt:
@@ -128,17 +143,22 @@ if __name__ == "__main__":
     try:
         print("\nYoga Class Reservation System")
         print("-------------------------------------------------------")
-        print("Press Ctrl+C at any time to exit safely\n")
+        print(f"    Press Ctrl+C at any time to exit safely\n")
         
         # Get studio choice
         studio = get_studio_choice()
         print(f"\nSelected studio: {'Metuchen' if 'metuchen' in studio.lower() else 'Cranford'}")
         print("-------------------------------------------------------")
+        print("\n")
         
         # Get month choice
-        target_year, target_month = get_target_month()
-        print(f"\nSearching for classes in {calendar.month_name[target_month]} {target_year}")
+        target_year, start_month, book_all_months = get_target_month()
+        if book_all_months:
+            print("\nBooking classes for all remaining months of the year")
+        else:
+            print(f"\nSearching for classes in {calendar.month_name[start_month]} {target_year}")
         print("-------------------------------------------------------")
+        print("\n")
         
         # Get instructor (optional)
         instructor = get_instructor()
@@ -147,7 +167,8 @@ if __name__ == "__main__":
         else:
             print("\nBooking classes with any instructor")
         print("-------------------------------------------------------")
-        
+        print("\n")
+
         # Get target day of week (optional)
         target_day = get_target_day()
         if target_day:
@@ -155,6 +176,7 @@ if __name__ == "__main__":
         else:
             print("\nBooking classes on any day")
         print("-------------------------------------------------------")
+        print("\n")
 
         # Get target time (optional)
         target_time = get_target_time()
@@ -163,10 +185,25 @@ if __name__ == "__main__":
         else:
             print("\nBooking classes at any time")
         print("-------------------------------------------------------")
+        print("\n")
         
         driver = init_driver()
 
-        mindbody_handler.reserve_classes(driver, studio, target_year, target_month, target_day, target_time, instructor)
+        if book_all_months:
+            # Process each remaining month of the year
+            try:
+                for month in range(start_month, 13):
+                    print("-------------------------------------------------------")
+                    print(f"Processing {calendar.month_name[month]} {target_year}")
+                    print("-------------------------------------------------------")
+                    print("\n")
+                    result = mindbody_handler.reserve_classes(driver, studio, target_year, month, target_day, target_time, instructor)
+                    if not result:  # If reserve_classes returns False, user interrupted
+                        break
+            except KeyboardInterrupt:
+                raise  # Re-raise to be caught by outer try block
+        else:
+            mindbody_handler.reserve_classes(driver, studio, target_year, start_month, target_day, target_time, instructor)
         
     except KeyboardInterrupt:
         print("\n\nKeyboard interrupt detected. Exiting safely...")

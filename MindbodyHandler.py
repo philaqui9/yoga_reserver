@@ -118,11 +118,11 @@ class MindbodyHandler:
             except:
                 # Check for thank you message
                 try:
-                    thank_you = WebDriverWait(driver, 5).until(
+                    thank_you = WebDriverWait(driver, 3).until(
                         EC.presence_of_element_located((By.CLASS_NAME, "thank.thank-booking-complete"))
                     )
                     if thank_you.is_displayed():
-                        print("Booking successful, closing thank you modal")
+                        print("Successfully booked class!")
                         driver.switch_to.default_content()
                         driver.execute_script("""
                             var closeButton = document.querySelector('.modal-close');
@@ -218,20 +218,28 @@ class MindbodyHandler:
                 datepicker = full_cal_field.find_element(By.CLASS_NAME, "bw-datepicker")
                 datepicker_button = datepicker.find_element(By.CLASS_NAME, "bw-datepicker__button")
                 datepicker_button.click()
-            else:
-                full_cal_button = calendar_container.find_element(By.CLASS_NAME, "bw-fullcal-button")
+                time.sleep(2)
+            else:  # Metuchen
+                full_cal_button = full_cal_field.find_element(By.CLASS_NAME, "bw-fullcal-button")
                 full_cal_button.click()
-            time.sleep(2)
+                time.sleep(2)
 
             # Use the generator from navigate_calendar
             for date_obj in self.navigate_calendar(driver, target_year, target_month, calendar_container):
+                # Check if the next date is still in our target month
+                if date_obj.month != target_month or date_obj.year != target_year:
+                    print(f"\nReached end of {calendar.month_name[target_month]} {target_year}")
+                    return None
+                
                 ok_button = WebDriverWait(driver, 10).until(
                     EC.element_to_be_clickable((By.CSS_SELECTOR, "a.hc-pignose-calendar-button.hc-pignose-calendar-button-apply"))
                 )
                 ok_button.click()
-                time.sleep(1)
-                # We only need the first date returned
+                time.sleep(2)
                 return date_obj
+            
+            # If we get here, no more dates were found
+            return None
             
         except Exception as e:
             print(f"Error moving to next week: {e}")
@@ -256,7 +264,12 @@ class MindbodyHandler:
                     # If we're in the right month, break
                     if current_year_num == target_year and current_month_num == target_month:
                         break
+                    
+                    print("\n-------------------------------------------------------")
+                    print("Moving to target month...")
+                    print("-------------------------------------------------------")
                         
+
                     # If target date is after current date, click next
                     if (target_year > current_year_num) or (target_year == current_year_num and target_month > current_month_num):
                         next_button = full_calendar.find_element(By.CSS_SELECTOR, "a.hc-pignose-calendar-top-nav.hc-pignose-calendar-top-next")
@@ -304,7 +317,7 @@ class MindbodyHandler:
             except Exception as e:
                 print(f"Error processing day: {e}")
                 continue
-    
+
     def book_sessions(self, driver, sessions, class_date, target_day=None, target_time=None, instructor=None):
         for session in sessions:
             try:
@@ -349,7 +362,10 @@ class MindbodyHandler:
                 print(f"    Date: {class_date.strftime('%A, %B %d, %Y')}")
                 print(f"    Time: {session_start_time} - {session_end_time}")
                 print(f"    Instructor: {staff_name}")
-                print("\nAttempting to book class...")
+                print("-------------------------------------------------------")
+
+                print("\n-------------------------------------------------------")
+                print("Attempting to book class...")
                 
                 # Click to expand details
                 session_basics.click()
@@ -363,7 +379,7 @@ class MindbodyHandler:
                 # Handle the booking modal
                 if self.handle_booking_modal(driver):
                     print(f"Successfully booked class for {class_date.strftime('%A, %B %d, %Y')} at {session_start_time} - {session_end_time}")
-                    # Continue with next session instead of returning
+                    # Continue with vi`next session instead of returning
                     continue
                 print("-------------------------------------------------------")
         
@@ -373,6 +389,13 @@ class MindbodyHandler:
 
     def get_first_day_of_week(self, days, target_year):
         try:
+            # Check if days list is empty
+            if not days:
+                print("-------------------------------------------------------")
+                print("No classes found in current week")
+                print("-------------------------------------------------------")
+                return None
+            
             first_day = days[0]
             date_div = first_day.find_element(By.CLASS_NAME, "bw-widget__date")
             date_text = date_div.text
@@ -410,14 +433,20 @@ class MindbodyHandler:
                     first_day_key = self.get_first_day_of_week(days, target_year)
                     if first_day_key:
                         if first_day_key in self.processed_first_days:
-                            print(f"\nReached a previously processed week")
+                            print("\n-------------------------------------------------------")
+                            print(f"Reached a previously processed week")
+                            print("-------------------------------------------------------")
+                            print("\n")
                             return True
                         self.processed_first_days.add(first_day_key)
                     
                     self.get_sessions_from_days(driver, days, target_year, target_month, target_day, target_time, instructor)
 
                     # After processing current week, move to next week
+                    
+                    print("\n-------------------------------------------------------")
                     print("Moving to next week...")
+                    print("-------------------------------------------------------")
                     next_week_date = self.move_to_next_week(driver, studio, target_year, target_month) 
                     time.sleep(5)
                     if not next_week_date:
