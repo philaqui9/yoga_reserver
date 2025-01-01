@@ -22,7 +22,9 @@ A Python automation script to book yoga classes at Hot Yoga Revolution studios.
    pip install selenium
    ```
 
-3. Create a `config` directory and add `config.py` with your credentials:
+3. Set up configuration:
+   - Copy `config/config.template.py` to `config/config.py`
+   - Edit `config.py` with your credentials:
    ```python
    MINDBODY_USERNAME = "your_email@example.com"
    MINDBODY_PASSWORD = "your_password"
