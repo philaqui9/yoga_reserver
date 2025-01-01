@@ -31,6 +31,7 @@ MONTHS = {
 }
 
 class MindbodyHandler:
+
     def __init__(self):
         self.processed_first_days = set()  # Store first day of each week
     
@@ -242,7 +243,6 @@ class MindbodyHandler:
             while True:
                 # Get current month/year from calendar header
                 try:
-                    # Print raw elements for debugging
                     top_date = full_calendar.find_element(By.CLASS_NAME, "hc-pignose-calendar-top-date")
                     month_element = top_date.find_element(By.CLASS_NAME, "hc-pignose-calendar-top-month")
                     year_element = top_date.find_element(By.CLASS_NAME, "hc-pignose-calendar-top-year")
@@ -298,8 +298,7 @@ class MindbodyHandler:
                 # Check if day is in target month
                 if class_date.year == target_year and class_date.month == target_month:
                     # Find sessions within this day
-                    sessions = day.find_elements(By.CLASS_NAME, "bw-session")
-                    
+                    sessions = day.find_elements(By.CLASS_NAME, "bw-session") 
                     self.book_sessions(driver, sessions, class_date, target_day, target_time, instructor)
 
             except Exception as e:
