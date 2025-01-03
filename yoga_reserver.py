@@ -263,8 +263,8 @@ def begin_reservation_system(studio, target_year, start_month, book_all_months, 
         target_time (datetime.time or None): The target time or None for any time
         instructor (str or None): The instructor name or None for any instructor
     
-    Raises:
-        KeyboardInterrupt: If the user interrupts the process
+    Returns:
+        tuple: (driver, bool) - The webdriver instance and whether to close it
     """
 
     driver = init_driver()
@@ -283,13 +283,22 @@ def begin_reservation_system(studio, target_year, start_month, book_all_months, 
                 print("-------------------------------------------------------")
                 print("\n")
                 result = mindbody_handler.reserve_classes(driver, studio, target_year, month, target_day, target_time, instructor)
-                if not result:  # If reserve_classes returns False, user interrupted
-                    break
+
+                if result is None:  # Membership expired
+                    return driver, True
+                if not result:  # User interrupted
+                    return driver, True
+                
         except KeyboardInterrupt:
-            raise  # Re-raise to be caught by outer try block
-    else:
-        mindbody_handler.reserve_classes(driver, studio, target_year, start_month, target_day, target_time, instructor)
+            return driver, True
         
+    else:
+        result = mindbody_handler.reserve_classes(driver, studio, target_year, start_month, target_day, target_time, instructor)
+        if result is None:  # Membership expired
+            return driver, True
+        
+    return driver, True
+
 def init_driver():
     """Initializes and configures the Chrome webdriver.
     
@@ -316,14 +325,18 @@ if __name__ == "__main__":
         print(f"    Press Ctrl+C at any time to exit safely\n")
         
         studio, target_year, start_month, book_all_months, target_day, target_time, instructor = read_all_inputs()
-        begin_reservation_system(studio, target_year, start_month, book_all_months, target_day, target_time, instructor)
+        driver, should_close = begin_reservation_system(studio, target_year, start_month, book_all_months, target_day, target_time, instructor)
         
     except KeyboardInterrupt:
         print("\n\nKeyboard interrupt detected. Exiting safely...")
+        should_close = True
+
     except Exception as e:
         print(f"\nAn error occurred: {e}")
+        should_close = True
+
     finally:
-        if driver:
+        if driver and should_close:
             print("\nClosing browser...")
             driver.quit()
             print("Browser closed. Goodbye!")

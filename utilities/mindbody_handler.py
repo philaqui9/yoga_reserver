@@ -8,6 +8,7 @@ import time
 from utilities.mindbody_utils.modal_utils import ModalUtils
 from utilities.mindbody_utils.calendar_utils import CalendarUtils
 from resources.html_selectors import *
+from config.config import MINDBODY_MEMBERSHIP_EXPIRATION_DATE
 
 # Global month dictionary
 MONTHS = {
@@ -33,6 +34,7 @@ class MindbodyHandler:
         self.processed_dates = set()  # Store processed dates
         self.modal_utils = ModalUtils()
         self.calendar_utils = CalendarUtils()
+        self.expiration_date = datetime.strptime(MINDBODY_MEMBERSHIP_EXPIRATION_DATE, "%Y-%m-%d").date()
     
     def is_month_changed_in_batch(self, driver, studio, target_month, target_year, current_month_name, current_month, current_year, class_day):
         """Check if we need to change months while processing a batch of days.
@@ -136,11 +138,19 @@ class MindbodyHandler:
                     # Get current month and year
                     current_month = class_date.month
                     current_year = class_date.year
+
+                    # Check if we've reached the membership expiration date
+                    if class_date.date() > self.expiration_date:
+                        print("\n-------------------------------------------------------")
+                        print(f"Reached membership expiration date ({self.expiration_date})")
+                        print("Stopping reservation process")
+                        print("-------------------------------------------------------")
+                        return False, True
                     
                     # Check if we've reached the end of the month
                     early_month_change = self.is_month_changed_in_batch(driver, studio, target_month, target_year, current_month_name, current_month, current_year, class_day)
                     if early_month_change:
-                        return False
+                        return False, False 
                     
                     # Check if we've already processed this date
                     date_key = class_date.strftime("%Y-%m-%d")
@@ -165,7 +175,7 @@ class MindbodyHandler:
                 print(f"Error processing day: {e}")
                 continue
 
-        return True
+        return True, False
 
     def book_sessions(self, driver, sessions, class_date, target_day=None, target_time=None, instructor=None):
         """Helper method to book individual sessions
@@ -264,13 +274,16 @@ class MindbodyHandler:
             
             while True:
                 
-                continue_processing = self.process_days(driver, studio, target_year, target_month, target_day, target_time, instructor)
+                continue_processing, membership_expired = self.process_days(driver, studio, target_year, target_month, target_day, target_time, instructor)
 
                 if not continue_processing:
                     print("\n-------------------------------------------------------")
                     print(f"Finished processing {calendar.month_name[target_month]} {target_year}")
                     print("-------------------------------------------------------")
                     print("\n")
+
+                    if membership_expired:
+                        return None
                     return True
                  
                 self.calendar_utils.move_to_next_week(driver, studio, target_month, target_year, None, None, self.processed_dates) 
