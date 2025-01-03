@@ -1,10 +1,5 @@
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
-from datetime import datetime, timedelta
-
+from datetime import datetime
 import calendar
 from utilities.mindbody_handler import MindbodyHandler
 from config.config import (
@@ -253,7 +248,7 @@ def read_all_inputs():
 
     return studio, target_year, start_month, book_all_months, target_day, target_time, instructor
 
-def begin_reservation(studio, target_year, start_month, book_all_months, target_day, target_time, instructor):
+def begin_reservation_system(studio, target_year, start_month, book_all_months, target_day, target_time, instructor):
     """Initiates the class reservation process with the provided parameters.
     
     Sets up the webdriver and handles the reservation process for either a single month
@@ -321,7 +316,7 @@ if __name__ == "__main__":
         print(f"    Press Ctrl+C at any time to exit safely\n")
         
         studio, target_year, start_month, book_all_months, target_day, target_time, instructor = read_all_inputs()
-        begin_reservation(studio, target_year, start_month, book_all_months, target_day, target_time, instructor)
+        begin_reservation_system(studio, target_year, start_month, book_all_months, target_day, target_time, instructor)
         
     except KeyboardInterrupt:
         print("\n\nKeyboard interrupt detected. Exiting safely...")
