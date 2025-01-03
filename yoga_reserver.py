@@ -4,13 +4,26 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from datetime import datetime, timedelta
-import calendar
-import time
-import os
-from utils.mindbody_handler import MindbodyHandler
 
+import calendar
+from utilities.mindbody_handler import MindbodyHandler
+from config.config import (
+    HYR_METUCHEN_URL,
+    HYR_CRANFORD_URL
+)
 
 def get_studio_choice():
+    """Prompts the user to select a yoga studio.
+    
+    Displays a menu of available studios and handles user input validation.
+    
+    Returns:
+        str: The selected studio name ('metuchen' or 'cranford')
+    
+    Raises:
+        ValueError: If the user enters invalid input
+    """
+
     while True:
         try:
             print("-------------------------------------------------------")
@@ -31,6 +44,21 @@ def get_studio_choice():
             print("Invalid input. Please enter a number.")
 
 def get_target_month():
+    """Prompts the user to select a target month for class booking.
+    
+    Displays a menu of months and handles user input validation.
+    Allows selection of current month, specific month, or all remaining months.
+    
+    Returns:
+        tuple: Contains:
+            - int: Target year
+            - int: Target month (1-12)
+            - bool: Whether to book all remaining months
+    
+    Raises:
+        ValueError: If the user enters invalid input
+    """
+
     while True:
         try:
             # Get current month and year
@@ -64,6 +92,18 @@ def get_target_month():
             print("Invalid input. Please enter a number or press Enter.")
 
 def get_target_day():
+    """Prompts the user to select a target day of the week for class booking.
+    
+    Displays a menu of days and handles user input validation.
+    Allows selection of specific day or any day.
+    
+    Returns:
+        str or None: The selected day name or None if any day is selected
+    
+    Raises:
+        ValueError: If the user enters invalid input
+    """
+
     days = {
         1: "Monday",
         2: "Tuesday",
@@ -96,6 +136,19 @@ def get_target_day():
             print("Invalid input. Please enter a number or press Enter.")
 
 def get_target_time():
+    """Prompts the user to enter a target time for class booking.
+    
+    Handles user input validation for time format.
+    Allows selection of specific time or any time.
+    
+    Returns:
+        datetime.time or None: The selected time or None if any time is selected
+    
+    Raises:
+        ValueError: If the user enters invalid time format
+        KeyboardInterrupt: If the user interrupts the process
+    """
+
     while True:
         try:
             print("-------------------------------------------------------")
@@ -117,6 +170,17 @@ def get_target_time():
             print("Invalid input. Please try again.")
 
 def get_instructor():
+    """Prompts the user to enter an instructor name for class filtering.
+    
+    Allows selection of specific instructor or any instructor.
+    
+    Returns:
+        str or None: The instructor name or None if any instructor is selected
+    
+    Raises:
+        KeyboardInterrupt: If the user interrupts the process
+    """
+
     while True:
         try:
             print("-------------------------------------------------------")
@@ -128,7 +192,118 @@ def get_instructor():
         except:
             print("Invalid input. Please try again.")
 
+def read_all_inputs():
+    """Collects all necessary inputs from the user for class booking.
+    
+    Prompts for studio, month, instructor, day, and time preferences.
+    Provides feedback after each selection.
+    
+    Returns:
+        tuple: Contains all booking parameters:
+            - str: Studio name
+            - int: Target year
+            - int: Start month
+            - bool: Whether to book all months
+            - str or None: Target day
+            - datetime.time or None: Target time
+            - str or None: Instructor name
+    """
+
+    # Get studio choice
+    studio = get_studio_choice()
+    print(f"\nSelected studio: {'Metuchen' if 'metuchen' in studio.lower() else 'Cranford'}")
+    print("-------------------------------------------------------")
+    print("\n")
+    
+    # Get month choice
+    target_year, start_month, book_all_months = get_target_month()
+    if book_all_months:
+        print("\nBooking classes for all remaining months of the year")
+    else:
+        print(f"\nSearching for classes in {calendar.month_name[start_month]} {target_year}")
+    print("-------------------------------------------------------")
+    print("\n")
+    
+    # Get instructor (optional)
+    instructor = get_instructor()
+    if instructor:
+        print(f"\nSelected instructor: {instructor}")
+    else:
+        print("\nBooking classes with any instructor")
+    print("-------------------------------------------------------")
+    print("\n")
+
+    # Get target day of week (optional)
+    target_day = get_target_day()
+    if target_day:
+        print(f"\nSelected day: {target_day}")
+    else:
+        print("\nBooking classes on any day")
+    print("-------------------------------------------------------")
+    print("\n")
+
+    # Get target time (optional)
+    target_time = get_target_time()
+    if target_time:
+        print(f"\nSelected time: {target_time.strftime('%I:%M %p')}")
+    else:
+        print("\nBooking classes at any time")
+    print("-------------------------------------------------------")
+    print("\n")
+
+    return studio, target_year, start_month, book_all_months, target_day, target_time, instructor
+
+def begin_reservation(studio, target_year, start_month, book_all_months, target_day, target_time, instructor):
+    """Initiates the class reservation process with the provided parameters.
+    
+    Sets up the webdriver and handles the reservation process for either a single month
+    or all remaining months of the year.
+    
+    Args:
+        studio (str): The selected studio name
+        target_year (int): The target year for booking
+        start_month (int): The starting month for booking
+        book_all_months (bool): Whether to book for all remaining months
+        target_day (str or None): The target day of week or None for any day
+        target_time (datetime.time or None): The target time or None for any time
+        instructor (str or None): The instructor name or None for any instructor
+    
+    Raises:
+        KeyboardInterrupt: If the user interrupts the process
+    """
+
+    driver = init_driver()
+
+    if studio.lower() == 'cranford':
+        driver.get(HYR_CRANFORD_URL.strip())
+    else:
+        driver.get(HYR_METUCHEN_URL.strip())
+
+    if book_all_months:
+        # Process each remaining month of the year
+        try:
+            for month in range(start_month, 13):
+                print("-------------------------------------------------------")
+                print(f"Processing {calendar.month_name[month]} {target_year}")
+                print("-------------------------------------------------------")
+                print("\n")
+                result = mindbody_handler.reserve_classes(driver, studio, target_year, month, target_day, target_time, instructor)
+                if not result:  # If reserve_classes returns False, user interrupted
+                    break
+        except KeyboardInterrupt:
+            raise  # Re-raise to be caught by outer try block
+    else:
+        mindbody_handler.reserve_classes(driver, studio, target_year, start_month, target_day, target_time, instructor)
+        
 def init_driver():
+    """Initializes and configures the Chrome webdriver.
+    
+    Sets up Chrome options for optimal performance and user experience.
+    
+    Returns:
+        webdriver.Chrome: Configured Chrome webdriver instance
+    """
+
     options = webdriver.ChromeOptions()
     options.add_argument('--start-maximized')
     options.add_argument('--disable-gpu')
@@ -145,65 +320,8 @@ if __name__ == "__main__":
         print("-------------------------------------------------------")
         print(f"    Press Ctrl+C at any time to exit safely\n")
         
-        # Get studio choice
-        studio = get_studio_choice()
-        print(f"\nSelected studio: {'Metuchen' if 'metuchen' in studio.lower() else 'Cranford'}")
-        print("-------------------------------------------------------")
-        print("\n")
-        
-        # Get month choice
-        target_year, start_month, book_all_months = get_target_month()
-        if book_all_months:
-            print("\nBooking classes for all remaining months of the year")
-        else:
-            print(f"\nSearching for classes in {calendar.month_name[start_month]} {target_year}")
-        print("-------------------------------------------------------")
-        print("\n")
-        
-        # Get instructor (optional)
-        instructor = get_instructor()
-        if instructor:
-            print(f"\nSelected instructor: {instructor}")
-        else:
-            print("\nBooking classes with any instructor")
-        print("-------------------------------------------------------")
-        print("\n")
-
-        # Get target day of week (optional)
-        target_day = get_target_day()
-        if target_day:
-            print(f"\nSelected day: {target_day}")
-        else:
-            print("\nBooking classes on any day")
-        print("-------------------------------------------------------")
-        print("\n")
-
-        # Get target time (optional)
-        target_time = get_target_time()
-        if target_time:
-            print(f"\nSelected time: {target_time.strftime('%I:%M %p')}")
-        else:
-            print("\nBooking classes at any time")
-        print("-------------------------------------------------------")
-        print("\n")
-        
-        driver = init_driver()
-
-        if book_all_months:
-            # Process each remaining month of the year
-            try:
-                for month in range(start_month, 13):
-                    print("-------------------------------------------------------")
-                    print(f"Processing {calendar.month_name[month]} {target_year}")
-                    print("-------------------------------------------------------")
-                    print("\n")
-                    result = mindbody_handler.reserve_classes(driver, studio, target_year, month, target_day, target_time, instructor)
-                    if not result:  # If reserve_classes returns False, user interrupted
-                        break
-            except KeyboardInterrupt:
-                raise  # Re-raise to be caught by outer try block
-        else:
-            mindbody_handler.reserve_classes(driver, studio, target_year, start_month, target_day, target_time, instructor)
+        studio, target_year, start_month, book_all_months, target_day, target_time, instructor = read_all_inputs()
+        begin_reservation(studio, target_year, start_month, book_all_months, target_day, target_time, instructor)
         
     except KeyboardInterrupt:
         print("\n\nKeyboard interrupt detected. Exiting safely...")
