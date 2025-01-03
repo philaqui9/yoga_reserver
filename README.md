@@ -10,15 +10,19 @@ An automated system to book yoga classes at Hot Yoga Revolution studios through 
   - Day of the week
   - Time of day
   - Instructor
+- Smart calendar navigation:
+  - Automatically moves through weeks and months
+  - Tracks processed dates to avoid duplicates
+  - Handles month transitions seamlessly
 - Automated login and booking process
 - Graceful error handling and exit options
-- Progress tracking to avoid duplicate bookings
 
 ## Prerequisites
 
 - Python 3.7 or higher
 - Chrome browser
 - ChromeDriver (compatible with your Chrome version)
+- Selenium WebDriver
 
 ## Installation
 
@@ -68,6 +72,7 @@ python yoga_reserver.py
    - Navigate to the selected month
    - Find and book classes matching your criteria
    - Provide real-time feedback on the booking process
+   - Track processed dates to avoid duplicates
 
 4. To exit at any time:
    - Press Ctrl+C for graceful shutdown
@@ -78,28 +83,39 @@ python yoga_reserver.py
 ```
 yoga-reservation/
 ├── config/
-│   ├── config.py           # User credentials (not in git)
-│   └── config.template.py  # Template for config
+│   ├── config.py              # User credentials (not in git)
+│   └── config.template.py     # Template for config
 ├── resources/
-│   └── html_selectors.py   # HTML class names and selectors
+│   └── html_selectors.py      # HTML class names and selectors
 ├── utilities/
-│   └── mindbody_handler.py # Core booking functionality
-└── yoga_reserver.py        # Main script
+│   ├── mindbody_handler.py    # Main booking functionality
+│   └── mindbody_utils/
+│       ├── calendar_utils.py  # Calendar navigation utilities
+│       └── modal_utils.py     # Modal handling utilities
+└── yoga_reserver.py           # Main script
 ```
 
-## Notes
+## Features in Detail
 
-- The system processes one week at a time to ensure reliable booking
-- Already processed dates are tracked to avoid duplicate bookings
-- The browser window must remain open during operation
-- Login credentials are stored locally and never shared
+### Calendar Navigation
 
-## Error Handling
+- Smart date selection to avoid duplicate bookings
+- Automatic month transitions
+- Tracks processed dates across sessions
 
-- Invalid inputs are caught and re-prompted
-- Network issues are handled gracefully
-- Browser closure is detected and handled
-- Keyboard interrupts allow safe exit
+### Booking Process
+
+- Handles multiple session types
+- Validates class availability
+- Manages booking confirmations
+- Provides detailed feedback
+
+### Error Handling
+
+- Graceful handling of network issues
+- Recovery from failed bookings
+- Clear error messages
+- Safe exit options
 
 ## Contributing
 
